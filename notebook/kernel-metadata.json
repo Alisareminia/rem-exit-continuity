@@ -1,0 +1,15 @@
+{
+  "id": "alisaremi/rem-exit-continuity-visual-edition",
+  "title": "REM-Exit Continuity \u2014 Visual Edition",
+  "code_file": "rem-exit-continuity-visual.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": false,
+  "dataset_sources": [
+    "alisaremi/ad-and-sleep"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
