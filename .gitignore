@@ -7,4 +7,3 @@ kaggle.json
 .venv*/
 __pycache__/
 *.pkl
-figures/
