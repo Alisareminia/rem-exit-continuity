@@ -1,16 +1,10 @@
-# raw participant recordings never belong in this repository
+# Never publish participant data or credentials from this repo.
 data/
-*.zip
-# credentials
+*.csv
+!analysis/**/*.csv
 kaggle.json
 .kaggle/
-# environments and caches
 .venv*/
 __pycache__/
-*.pyc
-.DS_Store
-# build artefacts
-*.aux
-*.log
-*.fls
-*.fdb_latexmk
+*.pkl
+figures/

@@ -1,62 +1,92 @@
 # REM-exit continuity: a stage-transition marker of memory in older adults
 
-Code and notebook for the analysis of **where REM sleep goes when it ends**, and whether that
-tracks cognition, in 73 community-dwelling older adults monitored at home for roughly six months.
+Analysis code for the manuscript *"Where REM sleep goes when it ends: a stage-transition marker of
+memory performance in community-dwelling older adults."*
 
-The marker is the **REM-exit continuity index**, `P(REM -> light NREM)`: the share of REM episode
-terminations that hand off to light NREM sleep rather than to wake or deep NREM.
+The index of interest is **P(REM → light NREM)**: of all the times a REM episode ends, the share that
+hand off to light NREM rather than to wake or deep NREM. Everything here runs from a public dataset,
+so the analysis can be reproduced end to end without contacting the authors.
 
-![What the index counts](figures/fig01_hypnogram.png)
+---
 
-## Main result
+## 1. Get the data
 
-In 52 participants contributing 6,740 scored nights and 19,500 REM episode terminations, the index
-tracked the ACE-III memory subscale (beta = +0.49 SD per SD, 95% CI 0.23-0.75, p = 0.0004;
-FDR q = 0.005 across all twelve stage transitions). It was the only one of the twelve transitions to
-survive correction, behaved as a stable trait (split-half 0.87, six-month test-retest r = 0.77), and
-survived adjustment for mood, comorbidity and every conventional sleep metric computed from the same
-nights.
+The RESILIENT dataset is open on Zenodo under CC BY 4.0:
 
-It is also close to uninformative from a single night, and needs two to four weeks of recording
-before it stabilises, which is the practical point of the whole analysis.
+- **Data:** https://doi.org/10.5281/zenodo.16755408
+- **Data descriptor:** Céspedes Gómez N, *et al.* *Scientific Data* 2025;12:1675.
+  https://doi.org/10.1038/s41597-025-05958-x
 
-This is an **exploratory, hypothesis-generating** analysis. The marker was found by searching this
-dataset, not specified in advance, and it has not been replicated in an independent cohort.
+Download and unpack it so the layout looks like this:
 
-## Data
+```
+data/raw/
+├── Demographics.csv
+├── Resilient_metadata/
+└── Sleepmat_Watch_Data/
+    └── <participant-id>/Sleep_state.csv
+```
 
-The recordings are not in this repository. They are the public RESILIENT *AD and Sleep* dataset:
-<https://www.kaggle.com/datasets/alisaremi/ad-and-sleep>
+The scripts locate these by searching for `Demographics.csv` and `Sleep_state.csv`, so the exact
+nesting does not matter as long as they sit somewhere under `data/raw/`.
 
-## Reproducing
+## 2. Environment
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install numpy pandas scipy statsmodels scikit-learn matplotlib
-
-# regenerate the notebook from its generator, then run every code cell as a script
-python src/make_rem_notebook_v2.py --script
-MPLBACKEND=Agg python kaggle_nb_rem_v2/_validate.py
 ```
 
-The generator is the source of truth: `notebook/rem-exit-continuity-visual.ipynb` is built from
-`src/make_rem_notebook_v2.py`, so edit the generator rather than the notebook. A full run takes
-about ten minutes (the permutation tests and the nights-needed resampling dominate) and writes all
-thirteen figures plus eight result tables.
+## 3. Reproduce the analysis
 
-Set `FIGURE_TITLES=0` to drop the in-figure title block, which is how the manuscript's figures are
-produced (there the LaTeX caption carries the title instead).
+**Figures 1–12 and Tables 1–4** — open `notebook/rem-exit-continuity-visual.ipynb` and run it top to
+bottom (~5 min). It writes every figure as PDF and PNG plus the result CSVs. A fully executed copy
+with all outputs rendered is on Kaggle:
+https://www.kaggle.com/code/alisaremi/rem-exit-continuity-visual-edition
 
-`src/validate_palette.py` is a standalone check on the figure palette: it verifies the categorical
-colours clear the colour-vision-deficiency and contrast floors used throughout the figure set.
+**Figures 13–15** — the analyses added in response to review:
 
-## Layout
-
+```bash
+python analysis/extra_analyses.py          # ~7 min; --reuse to skip the transition pass
 ```
-notebook/   the published Kaggle notebook and its kernel metadata
-src/        the notebook generator and the palette validator
-figures/    rendered figures from the most recent run
-```
+
+| Output | What it is |
+|---|---|
+| `fig13_selection` | Bootstrap of the whole selection procedure (winner's-curse estimate) |
+| `fig14_specification` | Specification curve over 320 analytic paths |
+| `fig15_diagnostics` | Influence, leverage, normality and heteroscedasticity checks |
+| `selection_stability.csv` | How often each transition wins under resampling |
+| `specification_curve.csv` | Every specification and its coefficient |
+| `night_halves.csv` | Association re-estimated from disjoint night subsets |
+
+`src/make_rem_notebook_v2.py` is the generator the notebook is built from — edit that, not the
+`.ipynb`. Running it with `--script` emits a flat `_validate.py` of all code cells, which is how the
+notebook is tested (`nbconvert --execute` exits 0 even when a cell raises).
+`src/validate_palette.py` checks the figure palette against colour-vision-deficiency thresholds.
+
+## 4. Check you got the same answer
+
+| Quantity | Expected |
+|---|---|
+| Analysis sample | 52 participants; 50 in age- and sex-adjusted models |
+| Nights / transitions / REM terminations | 6,740 / 128,852 / 19,500 |
+| P(REM→light) vs ACE-III memory | β = +0.493, p = 0.0004, FDR q = 0.005 |
+| Split-half reliability / six-month test–retest | 0.872 / r = 0.774 |
+| AUC for ACE-III ≤ 82 | 0.735 (best conventional metric 0.639) |
+| Selection optimism / re-selection rate | −0.005 / 86% |
+| Specification curve | 320 paths, 98% positive, memory median β = +0.44 |
+| Nights needed | AUC 0.60 at 1 night → 0.74 at 28 |
+
+Permutation tests, bootstraps and the night-subsampling procedure are seeded, so these reproduce
+exactly. Anything that moves by more than rounding means the data or environment differs.
+
+## 5. Scope
+
+This is an exploratory, cross-sectional analysis of 50–52 people, with sleep stages inferred by a
+consumer under-mattress sensor rather than polysomnography. The manuscript treats P(REM → light NREM)
+as a candidate index requiring replication, not as an established biomarker, and the code is
+published so that claim can be checked rather than taken on trust.
 
 ## Licence
 
-MIT, see `LICENSE`.
+MIT (code). The dataset is CC BY 4.0 and is not redistributed here — download it from Zenodo.
