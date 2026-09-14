@@ -225,6 +225,8 @@ def suptitle(fig, title, subtitle=None, y=1.02):
 
 def dest_legend(fig, labels=None, y=1.045):
     labels = labels or DEST_LABEL
+    if not FIGURE_TITLES:          # no title block above, so sit closer to the axes
+        y = 1.005
     fig.legend(handles=[plt.Line2D([], [], marker="o", ls="none", ms=9, mfc=DEST[k],
                                    mec=SURFACE, mew=1.5, label=labels[k]) for k in ("L", "W", "D")],
                loc="upper right", bbox_to_anchor=(.995, y), ncol=3, frameon=False,
@@ -1339,10 +1341,12 @@ for ax, y, ttl in [(axes[0], "ace_memory_subscale", "a · ACE-III memory"),
     ax.grid(axis="y", visible=False)
     ax.set_xlim(-.18, .98)
     ax.text(1.015, 1.005, "p", transform=ax.transAxes, fontsize=8.5, color=INK2, fontweight="bold")
-    ax.text(-.17, len(F) - .55, "COVARIATE ADJUSTMENT", fontsize=8, color=MUTED, ha="left",
-            va="center", fontweight="bold")
-    ax.text(-.17, nsplit - 1.0, "ANALYTIC CHOICE", fontsize=8, color=MUTED, ha="left",
-            va="center", fontweight="bold")
+    ax.text(-.34, (nsplit + len(F) - 1) / 2, "COVARIATE ADJUSTMENT",
+            transform=ax.get_yaxis_transform(), rotation=90, ha="center", va="center",
+            fontsize=7.5, color=MUTED, fontweight="bold")
+    ax.text(-.34, (nsplit - 1) / 2, "ANALYTIC CHOICE",
+            transform=ax.get_yaxis_transform(), rotation=90, ha="center", va="center",
+            fontsize=7.5, color=MUTED, fontweight="bold")
     if ttl.startswith("a"):
         ax.text(0, 1.015, "blue band = 95% CI of the primary model", transform=ax.transAxes,
                 fontsize=8.8, color=MUTED, va="bottom")
@@ -1541,7 +1545,8 @@ for lab, col, lw in [(best_conv.metric, DEST["W"], 2.0), (KEY, DEST["L"], 2.8)]:
     ax.plot(fpr, tpr, color=col, lw=lw, zorder=4,
             label=f"{lab}  (AUC {roc_auc_score(d.impaired, sgn*d[c]):.2f})")
 ax.plot([0, 1], [0, 1], color=AXIS, lw=1.2, zorder=1)
-ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate"); ax.set_aspect("equal")
+ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate")
+ax.set_aspect("equal"); ax.set_anchor("N")
 ax.set_title("a · Detecting ACE-III ≤ 82", loc="left", pad=26)
 ax.legend(fontsize=8.2, loc="lower right", labelcolor=INK2)
 
