@@ -30,7 +30,7 @@ TABDIR = os.path.join(HERE, "tables")
 os.makedirs(FIGDIR, exist_ok=True); os.makedirs(TABDIR, exist_ok=True)
 
 # ---------------------------------------------------------------- house style
-SURFACE, INK, INK2, MUTED = "#fcfcfb", "#0b0b0b", "#52514e", "#898781"
+SURFACE, INK, INK2, MUTED = "#ffffff", "#0b0b0b", "#52514e", "#898781"
 GRID, AXIS, WASH = "#e1e0d9", "#c3c2b7", "#f0efec"
 BLUE, ORANGE, AQUA, RED = "#2a78d6", "#eb6834", "#1baf7a", "#e34948"
 matplotlib.rcParams.update({
@@ -228,7 +228,8 @@ pd.DataFrame([{"transition": TRLAB[t], "selected_pct": 100*sel_counts[t]/B_SEL,
              ).sort_values("selected_pct", ascending=False).to_csv(
     f"{TABDIR}/selection_stability.csv", index=False)
 
-fig, axes = plt.subplots(1, 2, figsize=(12.4, 4.3), gridspec_kw={"width_ratios": [1, 1.15]})
+fig, axes = plt.subplots(1, 2, figsize=(13.2, 4.3),
+                         gridspec_kw={"width_ratios": [1, 1.15], "wspace": .46})
 ax = axes[0]
 ax.hist(boot_prl, bins=38, color=BLUE, alpha=.85, edgecolor=SURFACE, linewidth=.6)
 # the two estimates are nearly identical, so the labels go in a stack rather than
@@ -327,16 +328,25 @@ r = 0
 for cname, vals in CHOICES:
     for v in vals:
         ypos[(cname, v)] = r; ylabels.append(f"{v}"); r += 1
+r = 0                                   # alternating bands tie values to their group
+for gi, (cname, vals) in enumerate(CHOICES):
+    if gi % 2 == 0:
+        ax2.axhspan(r - .5, r + len(vals) - .5, color="#f4f4f2", zorder=0)
+    r += len(vals)
 for i, row in SPEC.iterrows():
     for cname, _ in CHOICES:
         ax2.plot([i], [ypos[(cname, row[cname])]], marker="s", ms=1.7,
-                 color=BLUE if row.p < .05 else MUTED, alpha=.85)
+                 color=BLUE if row.p < .05 else MUTED, alpha=.85, zorder=3)
 r = 0
 for cname, vals in CHOICES:
-    ax2.axhline(r - .5, color=GRID, lw=1)
-    ax2.text(-0.128, r + (len(vals)-1)/2, cname.replace("_", " "),
+    ax2.axhline(r - .5, color=AXIS, lw=1.1, zorder=2)
+    ax2.text(-0.138, r + (len(vals)-1)/2, cname.replace("_", " "),
              transform=ax2.get_yaxis_transform(), ha="right", va="center",
              fontsize=8.5, color=INK, fontweight="bold")
+    # a bracket from the group name to the rows it covers
+    ax2.plot([-0.131, -0.131], [r - .35, r + len(vals) - .65],
+             transform=ax2.get_yaxis_transform(), color=AXIS, lw=1.2,
+             clip_on=False, solid_capstyle="butt")
     r += len(vals)
 ax2.set_yticks(range(len(ylabels)), ylabels, fontsize=8)
 ax2.set_ylim(-.7, len(ylabels) - .3); ax2.invert_yaxis()
