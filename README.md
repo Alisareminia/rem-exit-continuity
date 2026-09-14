@@ -1,7 +1,9 @@
-# REM-exit continuity: a stage-transition marker of memory in older adults
+# Sleep-stage transition analysis and memory in older adults
 
-Analysis code for the manuscript *"Where REM sleep goes when it ends: a stage-transition marker of
-memory performance in community-dwelling older adults."*
+The REM-exit continuity index.
+
+Analysis code for the manuscript *"Sleep-stage transition analysis and memory in older adults:
+the REM-exit continuity index."*
 
 The index of interest is **P(REM → light NREM)**: of all the times a REM episode ends, the share that
 hand off to light NREM rather than to wake or deep NREM. Everything here runs from a public dataset,
