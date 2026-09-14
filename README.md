@@ -86,7 +86,3 @@ This is an exploratory, cross-sectional analysis of 50–52 people, with sleep s
 consumer under-mattress sensor rather than polysomnography. The manuscript treats P(REM → light NREM)
 as a candidate index requiring replication, not as an established biomarker, and the code is
 published so that claim can be checked rather than taken on trust.
-
-## Licence
-
-MIT (code). The dataset is CC BY 4.0 and is not redistributed here — download it from Zenodo.

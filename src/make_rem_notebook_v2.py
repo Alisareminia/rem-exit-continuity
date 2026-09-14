@@ -127,7 +127,7 @@ pd.set_option("display.width", 200); pd.set_option("display.max_columns", 60)
 RNG = np.random.default_rng(20260814)
 
 # ---------------------------------------------------------------- colour roles
-SURFACE = "#fcfcfb"                                  # chart surface
+SURFACE = "#ffffff"                                  # chart surface (flush with the page)
 INK, INK2, MUTED = "#0b0b0b", "#52514e", "#898781"   # text, in three weights
 GRID, AXIS, WASH = "#e1e0d9", "#c3c2b7", "#f0efec"   # chrome
 
@@ -449,8 +449,12 @@ def night_bouts(g):
     return pd.DataFrame([dict(stage=s, t0=g.start.iloc[a], t1=g.end.iloc[b - 1])
                          for s, a, b in zip(stages, st, en)])
 
-def representative_night(pid, target, min_exits=6):
-    "the night whose own REM-exit mix sits closest to the participant's pooled value"
+def representative_night(pid, target, min_exits=6, need_all_three=True):
+    # The night whose own REM-exit mix sits closest to the participant's pooled value.
+    # need_all_three also requires at least one exit to each destination, so the figure
+    # shows all three colours instead of leaving a reader to wonder where one went.
+    # (Docstrings here must stay single-line: this code is emitted inside a triple-quoted
+    #  block in the generator, so a nested triple quote would end it early.)
     df = read_stages(pid)
     best = None
     for night, g in df.groupby("night"):
@@ -460,13 +464,29 @@ def representative_night(pid, target, min_exits=6):
         ex = [NAME[bt.stage.iloc[i + 1]] for i in range(len(bt) - 1) if bt.stage.iloc[i] == 1]
         if len(ex) < min_exits:
             continue
+        if need_all_three and not {"L", "W", "D"}.issubset(set(ex)):
+            continue
         d = abs(ex.count("L") / len(ex) - target)
         if best is None or d < best[0]:
             best = (d, night, g)
     return best
 
+# Pick the pair to illustrate: strong and weak memory scores, but only among
+# participants who have a night containing all three exit destinations, so both
+# panels show the full palette. Among those, take the widest separation in P_RL.
 _cand = dat.dropna(subset=["ace_memory_subscale", "P_RL"]).sort_values("ace_memory_subscale")
-EXEMPLARS = {"high": _cand.iloc[-1], "low": _cand.iloc[0]}
+_lo_pool = _cand.head(12).sort_values("P_RL")           # weak memory, lowest P_RL first
+_hi_pool = _cand.tail(12).sort_values("P_RL", ascending=False)
+def _first_usable(pool):
+    for _, row in pool.iterrows():
+        if representative_night(row.participant, row.P_RL) is not None:
+            return row
+    return pool.iloc[0]
+EXEMPLARS = {"high": _first_usable(_hi_pool), "low": _first_usable(_lo_pool)}
+print(f"Figure 1 exemplars: high = {EXEMPLARS['high'].participant} "
+      f"(memory {EXEMPLARS['high'].ace_memory_subscale:.0f}, P_RL {EXEMPLARS['high'].P_RL:.2f}) | "
+      f"low = {EXEMPLARS['low'].participant} "
+      f"(memory {EXEMPLARS['low'].ace_memory_subscale:.0f}, P_RL {EXEMPLARS['low'].P_RL:.2f})")
 
 fig = plt.figure(figsize=(13.6, 6.6))
 gs = fig.add_gridspec(2, 2, width_ratios=[3.6, 1], hspace=.55, wspace=.20)
@@ -1688,7 +1708,8 @@ for i, k in enumerate(ks):
     col = matplotlib.colors.to_hex(SEQ(np.linspace(.28, 1.0, len(ks))[i]))
     ax.fill_between(xs, i, i + dns, color=col, alpha=.85, lw=0, zorder=3 + i)
     ax.plot(xs, i + dns, color=SURFACE, lw=1.4, zorder=3 + i)
-    ax.text(-.37, i + .12, f"{k}", ha="right", va="bottom", fontsize=8.5,
+    ax.text(-.018, i + .12, f"{k}", transform=ax.get_yaxis_transform(),
+            ha="right", va="bottom", fontsize=8.5,
             color=INK if k in (1, 14, 28, 112) else MUTED,
             fontweight="bold" if k in (1, 14, 28, 112) else "normal")
 ax.axvline(0, color=AXIS, lw=1.2, zorder=2)
@@ -1696,7 +1717,7 @@ ax.axvline(full_beta, color=INK, lw=1.3, zorder=len(ks) + 5)
 ax.text(full_beta + .02, len(ks) + .25, f"full recording β = {full_beta:.2f}", fontsize=8.5, color=INK)
 ax.set_yticks([]); ax.set_ylim(-.4, len(ks) + 1.0); ax.set_xlim(-.42, .95)
 ax.set_xlabel("standardised β (memory) recovered from k nights")
-ax.set_ylabel("nights per participant, k", labelpad=16)
+ax.set_ylabel("nights per participant, k", labelpad=26)
 ax.grid(axis="y", visible=False)
 ax.set_title("c · The whole sampling distribution", loc="left", pad=26)
 ax.text(0, 1.005, "each ridge is 60 re-estimates from k randomly drawn nights",
