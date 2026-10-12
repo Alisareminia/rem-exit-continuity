@@ -90,21 +90,28 @@ Every figure below is drawn from one small set of colour roles, and each role is
 
 | Role | Job | Colours |
 |---|---|---|
-| **REM-exit destination** | categorical identity — light NREM / wake / deep NREM | `#2a78d6` `#eb6834` `#1baf7a` |
-| **ACE-III groups and tertiles** | ordinal — the categories have an order | one blue hue, light → dark |
-| **Transition probability** | sequential magnitude | one blue hue, 100 → 700 |
-| **Signed effect (β, ρ)** | diverging polarity | blue ↔ red with a neutral grey midpoint |
+| **REM-exit destination** | categorical identity — light NREM / wake / deep NREM | `#374E55` `#DF8F44` `#79AF97` |
+| **ACE-III groups and tertiles** | ordinal — the categories have an order | one slate hue, light → dark |
+| **Transition probability** | sequential magnitude | one slate hue, light → dark |
+| **Signed effect (β, ρ)** | diverging polarity | deep blue ↔ brick red, neutral grey midpoint |
 | **Everything else** | context, not data | greys |
 
-The destination trio is the only categorical family in the notebook, and it was checked
-programmatically rather than by eye: under an all-pairs test (which is the right test for scatter
-and small-multiple panels, where any two marks can end up side by side) the worst pair separates by
-ΔE 24.0 for normal vision and ΔE 9.2 under simulated protanopia and deuteranopia — clear of the
-floors of 15 and 8. Cognitive status deliberately gets **no categorical hue at all**: five
-simultaneous categorical colours cannot clear those floors, so wherever a group split appears it is
-carried by position, faceting and direct labels instead. Aqua sits slightly below the 3:1 contrast
-target on this surface, so every mark that uses it carries a visible value label, and every figure
-has the printed table beside it.
+The colours are the JAMA house palette, chosen because the figures should look like the clinical
+literature they belong to rather than like a software default. The destination trio is the only
+categorical family here, and it was checked programmatically rather than by eye. Under an all-pairs
+test, which is the right test for scatter and small-multiple panels where any two marks can end up
+side by side, the worst pair separates by ΔE 16.2 for normal vision and ΔE 10.4 under simulated
+protanopia and deuteranopia, against floors of 15 and 8.
+
+Two caveats come with that choice. The slate is darker and less saturated than a strict categorical
+palette would allow, which is exactly what makes it read as ink rather than as a colour; the
+consequence is that the trio is carried partly by lightness, which also means it survives greyscale
+printing. And the amber and sage sit below the 3:1 contrast target against white, so every mark
+using them carries a visible value label and every figure has its printed table beside it.
+
+Cognitive status deliberately gets **no categorical hue at all**: five simultaneous categorical
+colours cannot clear the separation floors, so wherever a group split appears it is carried by
+position, faceting and direct labels instead.
 """)
 
 code(r"""
@@ -132,13 +139,13 @@ INK, INK2, MUTED = "#0b0b0b", "#52514e", "#898781"   # text, in three weights
 GRID, AXIS, WASH = "#e1e0d9", "#c3c2b7", "#f0efec"   # chrome
 
 # the one categorical family: where a REM episode goes when it ends
-DEST = {"L": "#2a78d6", "W": "#eb6834", "D": "#1baf7a"}
+DEST = {"L": "#374E55", "W": "#DF8F44", "D": "#79AF97"}   # JAMA: slate / amber / sage
 DEST_LABEL = {"L": "→ Light NREM", "W": "→ Wake", "D": "→ Deep NREM"}
 
-ORD3 = ["#86b6ef", "#3987e5", "#184f95"]             # ordinal blue: ACE-III tertiles
-SEQ_STEPS = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
+ORD3 = ["#a3aeb1", "#6f8085", "#374E55"]             # ordinal slate: ACE-III tertiles
+SEQ_STEPS = ["#f1f3f3", "#dfe3e4", "#c3cacc", "#9faaad", "#738388", "#4b6066", "#27373c"]
 SEQ = LinearSegmentedColormap.from_list("seq_blue", SEQ_STEPS)      # magnitude
-POS, NEG = "#2a78d6", "#e34948"                                     # diverging poles
+POS, NEG = "#0079A0", "#B24745"      # diverging poles: JAMA blue deepened to clear 3:1, and brick
 DIV = LinearSegmentedColormap.from_list("div", [NEG, WASH, POS])    # signed effects
 
 matplotlib.rcParams.update({

@@ -32,7 +32,7 @@ os.makedirs(FIGDIR, exist_ok=True); os.makedirs(TABDIR, exist_ok=True)
 # ---------------------------------------------------------------- house style
 SURFACE, INK, INK2, MUTED = "#ffffff", "#0b0b0b", "#52514e", "#898781"
 GRID, AXIS, WASH = "#e1e0d9", "#c3c2b7", "#f0efec"
-BLUE, ORANGE, AQUA, RED = "#2a78d6", "#eb6834", "#1baf7a", "#e34948"
+BLUE, ORANGE, AQUA, RED = "#374E55", "#DF8F44", "#79AF97", "#B24745"   # JAMA house palette
 matplotlib.rcParams.update({
     "figure.dpi": 110, "savefig.dpi": 220, "font.size": 10,
     "font.family": "sans-serif", "font.sans-serif": ["DejaVu Sans"],
