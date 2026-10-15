@@ -53,12 +53,20 @@ def save(fig, name):
     plt.close(fig); print("  saved", name)
 
 # ---------------------------------------------------------------- data layer
-ROOTS = [os.path.join(os.path.dirname(HERE), "data/raw")]
+# Data root. Searched in order so the same script runs from the paper's project layout,
+# from a fresh clone of the public repository (put the Zenodo files in data/raw/), or on
+# Kaggle. Override with the REM_DATA environment variable.
+ROOTS = [r for r in [os.environ.get("REM_DATA"),
+                     os.path.join(HERE, "data/raw"),
+                     os.path.join(os.path.dirname(HERE), "data/raw"),
+                     "/kaggle/input", "data/raw", "../data/raw", "."] if r]
 def find_one(name):
     for root in ROOTS:
         hits = glob.glob(f"{root}/**/{name}", recursive=True)
         if hits: return sorted(hits, key=len)[0]
-DEMO_PATH = find_one("Demographics.csv")
+# Prefer the Zenodo version this work cites (16755408): it adds the six-month ACE-III and
+# leaves every baseline variable byte-identical, so no result here depends on the choice.
+DEMO_PATH = find_one("Demographics_v16755408.csv") or find_one("Demographics.csv")
 SLEEPDIR = os.path.dirname(os.path.dirname(find_one("Sleep_state.csv")))
 PIDS = sorted(d for d in os.listdir(SLEEPDIR) if os.path.isdir(os.path.join(SLEEPDIR, d)))
 
@@ -71,6 +79,9 @@ TCOLS = [f"n_{NAME[a]}{NAME[b]}" for a in range(4) for b in range(4) if a != b]
 ACE = ["ace_total", "ace_attention_subscale", "ace_memory_subscale", "ace_fluency_subscale",
        "ace_language_subscale", "ace_visuospatial_subscale"]
 demo = pd.read_csv(DEMO_PATH).rename(columns={"user_id": "participant"})
+# the 16755408 release renamed gds15_total -> gds_total; the values are identical
+if "gds_total" in demo.columns and "gds15_total" not in demo.columns:
+    demo["gds15_total"] = demo["gds_total"]
 for c in ACE + ["phq_total", "gad_total", "gds15_total"]:
     demo[c] = pd.to_numeric(demo[c], errors="coerce")
 demo["age_mid"] = demo["Age group"].map({"[72, 75]": 73.5, "[76, 87]": 81.5, "[88, 99]": 93.5})
@@ -264,7 +275,7 @@ ax.set_xlabel("share of bootstrap resamples in which this transition is the stro
 ax.set_title("b · How stable the choice is", loc="left")
 ax.text(0, 1.02, "an arbitrary winner would scatter across routes",
         transform=ax.transAxes, fontsize=8.8, color=MUTED, va="bottom")
-save(fig, "fig13_selection")
+save(fig, "fig11_selection")
 
 # ============================================================ 2. specification curve
 print("\nspecification curve ...")
@@ -355,7 +366,7 @@ ax2.set_xlabel("specifications, ordered as above")
 ax2.text(0, 1.03, "b · the analytic choices behind each specification", transform=ax2.transAxes,
          fontsize=9.5, color=INK, fontweight="bold", va="bottom")
 for s in ("top", "right", "bottom"): ax2.spines[s].set_visible(False)
-save(fig, "fig14_specification")
+save(fig, "fig12_specification")
 
 # ============================================================ 3. disjoint night halves
 # The exposure is estimated twice from non-overlapping nights. This does not make the
@@ -447,7 +458,7 @@ ax.set_xlabel("leverage"); ax.set_ylabel("studentised residual")
 ax.set_title("d · Leverage", loc="left")
 ax.text(0, 1.02, f"max VIF {max(vif.values()):.2f}", transform=ax.transAxes, fontsize=8.8,
         color=MUTED, va="bottom")
-save(fig, "fig15_diagnostics")
+save(fig, "fig17_diagnostics")
 
 with open(f"{TABDIR}/extra_results.json", "w") as f:
     json.dump(RESULTS, f, indent=1, default=float)

@@ -260,7 +260,10 @@ def find_one(name):
                 return sorted(hits, key=len)[0]
     return None
 
-DEMO_PATH = find_one("Demographics.csv")
+# Prefer the Zenodo version this work cites (16755408). It differs from the earlier release only
+# by adding the six-month ACE-III: every baseline variable used here is identical across the two,
+# and the recordings are the same archive, so results do not depend on which one is present.
+DEMO_PATH = find_one("Demographics_v16755408.csv") or find_one("Demographics.csv")
 _state = find_one("Sleep_state.csv")
 SLEEPDIR = os.path.dirname(os.path.dirname(_state))
 PIDS = sorted(d for d in os.listdir(SLEEPDIR) if os.path.isdir(os.path.join(SLEEPDIR, d)))
@@ -286,6 +289,9 @@ ACE_COLS = ["ace_total", "ace_attention_subscale", "ace_memory_subscale",
 MOOD = ["phq_total", "gad_total", "gds15_total"]
 
 demo = pd.read_csv(DEMO_PATH).rename(columns={"user_id": "participant"})
+# the 16755408 release renamed gds15_total -> gds_total; the values are identical
+if "gds_total" in demo.columns and "gds15_total" not in demo.columns:
+    demo["gds15_total"] = demo["gds_total"]
 for c in ACE_COLS + MOOD:
     demo[c] = pd.to_numeric(demo[c], errors="coerce")
 demo["age_mid"] = demo["Age group"].map({"[72, 75]": 73.5, "[76, 87]": 81.5, "[88, 99]": 93.5})
