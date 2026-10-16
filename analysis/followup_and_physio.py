@@ -352,54 +352,9 @@ if HAS_FOLLOW and len(FU) >= 20:
     ax.grid(axis="y", visible=False)
     save(fig, "fig09_followup")
 
-# ---- fig17: physiological confounds
-if len(PH) >= 20:
-    fig, axes = plt.subplots(1, 2, figsize=(13.0, 4.4),
-                             gridspec_kw=dict(width_ratios=[1.05, 1]))
-    fig.subplots_adjust(wspace=.5)
-
-    ax = axes[0]
-    sub = b2.copy().reset_index(drop=True)
-    y = np.arange(len(sub))[::-1]
-    ax.axvline(0, color=AXIS, linewidth=1.2, zorder=2)
-    h = .17
-    for yy, (_, r) in zip(y, sub.iterrows()):
-        ax.barh(yy + h, r.rho_PRL, height=.3, color=BLUE, zorder=3)
-        ax.barh(yy - h, r.rho_memory, height=.3, color=AQUA, zorder=3)
-    ax.set_yticks(y)
-    ax.set_yticklabels([v.replace(" (", "\n(") for v in sub.variable], fontsize=8.5)
-    ax.set_xlabel("Spearman $\\rho$")
-    ax.set_title("a   Do the physiology channels track either variable?", loc="left")
-    ax.grid(axis="y", visible=False)
-    ax.set_xlim(-.55, .72)                      # headroom on the right for the key
-    ax.set_ylim(-.62, len(sub) - .38)
-    # a real legend, inside the empty right-hand region: the earlier annotation at the
-    # axes origin overdrew the bottom tick label and the x-axis numbers
-    from matplotlib.patches import Patch
-    ax.legend(handles=[Patch(facecolor=BLUE, label="with $P_{R\\rightarrow L}$"),
-                       Patch(facecolor=AQUA, label="with ACE-III memory")],
-              loc="upper right", fontsize=8.5, handlelength=1.1, handleheight=1.0,
-              borderpad=.5, labelspacing=.5)
-
-    ax = axes[1]
-    sub = b3.reset_index(drop=True)
-    y = np.arange(len(sub))[::-1]
-    ax.axvspan(sub.lo.iloc[0], sub.hi.iloc[0], color=WASH, zorder=1)
-    ax.axvline(0, color=AXIS, linewidth=1.2, zorder=2)
-    ax.axvline(sub.beta.iloc[0], color=AXIS, linewidth=1.0, linestyle=(0, (4, 3)), zorder=2)
-    for yy, (_, r) in zip(y, sub.iterrows()):
-        c = INK if yy == y[0] else (BLUE if r.p < .05 else RED)
-        ax.plot([r.lo, r.hi], [yy, yy], color=c, linewidth=2.4, solid_capstyle="round", zorder=3)
-        ax.plot([r.beta], [yy], "o", color=c, markersize=7.5, markeredgecolor="white",
-                markeredgewidth=1.1, zorder=4)
-        ax.annotate("%+.2f" % r.beta, xy=(r.hi + .035, yy), va="center", fontsize=8.5,
-                    color=INK2)
-    ax.set_yticks(y)
-    ax.set_yticklabels([m.replace(" (", "\n(") for m in sub.model], fontsize=8.5)
-    ax.set_xlabel("Standardised $\\beta$ for $P_{R\\rightarrow L}$ on ACE-III memory")
-    ax.set_title("b   The association under physiological adjustment", loc="left")
-    ax.grid(axis="y", visible=False)
-    ax.set_xlim(min(0, sub.lo.min() - .06), sub.hi.max() + .22)
-    save(fig, "fig14_physio")
+# Figure 14 was previously drawn here as paired correlation bars. It is now produced by
+# scripts/fig_physio_w3plus.py, which plots the participant-level distributions instead.
+# Two scripts writing one filename meant whichever ran last won, so the block is removed
+# rather than left commented out. This script still writes every physiology table it fed.
 
 print("\ndone. tables ->", TABDIR)

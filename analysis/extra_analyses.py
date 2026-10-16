@@ -249,8 +249,10 @@ ax.axvline(PRIMARY["beta"], color=INK, lw=1.8, zorder=5)
 ax.axvline(beta_corr, color=RED, lw=1.8, ls=(0, (4, 2)), zorder=6)
 for i, (lab, c) in enumerate([(f"naive  β = {PRIMARY['beta']:.2f}", INK),
                               (f"selection-adjusted  β = {beta_corr:.2f}", RED)]):
+    # the longer label reaches into the histogram, so give both a white backing
     ax.text(.03, .955 - i*.085, lab, transform=ax.transAxes, va="top", ha="left",
-            fontsize=9.2, color=c, fontweight="bold")
+            fontsize=9.2, color=c, fontweight="bold", zorder=8,
+            bbox=dict(boxstyle="round,pad=0.22", fc="white", ec="none", alpha=.92))
 ax.axvline(0, color=AXIS, lw=1.2)
 ax.set_xlabel("bootstrap β for P(REM → light NREM), memory subscale")
 ax.set_ylabel("resamples"); ax.set_yticks([])

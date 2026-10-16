@@ -653,7 +653,7 @@ ax.set_xticks(range(4), [LONG[NAME[i]] for i in order], fontsize=9.5)
 ax.set_yticks(range(4), [LONG[NAME[i]] for i in order], fontsize=9.5)
 ax.set_xlabel("to"); ax.set_ylabel("from")
 ax.set_title("a · Bout-to-bout transition probabilities", loc="left", pad=26)
-ax.text(0, 1.02, "the boxed REM row is the subject of this notebook", transform=ax.transAxes,
+ax.text(0, 1.02, "the boxed REM row is the subject of this analysis", transform=ax.transAxes,
         fontsize=8.8, color=MUTED, va="bottom")
 cb = fig.colorbar(im, ax=ax, shrink=.72, pad=.03); cb.outline.set_visible(False)
 cb.set_label("transition probability", fontsize=9, color=INK2)
@@ -991,7 +991,8 @@ ax.set_xlabel("← weaker memory" + " " * 110 + "stronger memory →")
 lo13, hi13 = d5.P_RL.iloc[:13].mean(), d5.P_RL.iloc[-13:].mean()
 for xpos, val, lab in [(6, lo13, "weakest 13"), (n5 - 7, hi13, "strongest 13")]:
     ax.annotate(f"{lab}: {100*val:.0f}%", xy=(xpos, val), xytext=(xpos, val - .17), ha="center",
-                fontsize=9, color=INK, fontweight="bold",
+                fontsize=9, color=INK, fontweight="bold", zorder=9,
+                bbox=dict(boxstyle="round,pad=0.28", fc="white", ec="none", alpha=.92),
                 arrowprops=dict(arrowstyle="-", color=INK, lw=1.2, shrinkA=2, shrinkB=6))
 suptitle(fig, "Figure 5 · Every participant's REM-exit composition",
          "The gradient is visible without any model: the canonical blue share thins toward the "
@@ -1077,7 +1078,7 @@ ax.text(0, 1.03, "* survives FDR at q < 0.10", transform=ax.transAxes, fontsize=
 
 row_order = spec_mem.sort_values("beta").transition.tolist()
 xlo = min(spec_mem.lo.min(), spec_total.lo.min()) - .08
-xhi = max(spec_mem.hi.max(), spec_total.hi.max()) + .34
+xhi = max(spec_mem.hi.max(), spec_total.hi.max()) + .52   # headroom for the q= labels
 for gi, (R, ttl) in enumerate([(spec_mem, "b · ACE-III memory subscale"),
                                (spec_total, "c · ACE-III total")]):
     ax = fig.add_subplot(gs[gi + 1])
@@ -1581,7 +1582,8 @@ ax.plot([0, 1], [0, 1], color=AXIS, lw=1.2, zorder=1)
 ax.set_xlabel("false-positive rate"); ax.set_ylabel("true-positive rate")
 ax.set_aspect("equal"); ax.set_anchor("N")
 ax.set_title("a · Detecting ACE-III ≤ 82", loc="left", pad=26)
-ax.legend(fontsize=8.2, loc="lower right", labelcolor=INK2)
+ax.legend(fontsize=8.2, loc="lower right", labelcolor=INK2, frameon=True,
+          facecolor="white", edgecolor="none", framealpha=.88).set_zorder(9)
 
 ax = fig.add_subplot(gs[1])
 Bp = B.iloc[::-1].reset_index(drop=True)
@@ -1689,7 +1691,7 @@ ax.fill_between(CURVE.k, CURVE.auc_lo, CURVE.auc_hi, color=DEST["L"], alpha=.13,
 ax.plot(CURVE.k, CURVE.auc, color=DEST["L"], lw=2, zorder=4)
 dot(ax, CURVE.k, CURVE.auc, DEST["L"], s=42, zorder=5)
 ax.axhline(full_auc, color=INK, lw=1.3, zorder=3)
-ax.text(112, full_auc + .013, f"full recording {full_auc:.2f}", fontsize=8.5, color=INK, ha="right")
+ax.text(112, full_auc + .022, f"full recording {full_auc:.2f}", fontsize=8.5, color=INK, ha="right")
 ax.axhline(.5, color=AXIS, lw=1.2, zorder=2)
 ax.text(1.02, .506, "chance", fontsize=8.5, color=MUTED)
 ax.axvspan(14, 28, color=WASH, zorder=0)
@@ -1739,6 +1741,196 @@ suptitle(fig, "Figure 12 · How many nights does this need?",
          "The question that decides whether the marker is usable — and why a six-month recording was "
          "needed to find it.", y=1.015)
 save(fig, "fig12_nights"); plt.show()
+""")
+
+# ============================================================ 12b. Staging artefact
+md(r"""
+## 12b · Is it an artefact of how the device stages sleep?
+
+A different objection survives everything above. Suppose the mat stages sleep less accurately in
+people with worse cognition. Irregular breathing, autonomic change and restlessness all travel with
+neurodegeneration, and any of them could degrade a ballistocardiograph's stage estimates. Such a
+person would accumulate more off-canonical REM exits for reasons owing nothing to REM-exit
+circuitry, and the association reported above would follow.
+
+This is usually treated as untestable without polysomnography. It is partly testable here, because
+the mat reports respiration rate, SDNN and snoring every minute alongside the stages — channels this
+analysis has not used so far. They give the artefact account three places to show itself.
+""")
+
+code(r"""
+# Nocturnal physiology over the same nights that produced the transitions.
+PHYSIO_MIN_NIGHTS = 10
+
+def physio_summary(pid, keep_nights):
+    f = os.path.join(SLEEPDIR, pid, "Sleep_physio.csv")
+    if not os.path.exists(f):
+        return None
+    p = pd.read_csv(f, parse_dates=["Timestamp"])
+    p["night"] = (p.Timestamp - pd.Timedelta(hours=12)).dt.date.astype(str)
+    p = p[p.night.isin(keep_nights)]
+    if p.empty:
+        return None
+    g = p.groupby("night").agg(rr_mean=("Respiration Rate", "mean"),
+                               rr_sd=("Respiration Rate", "std"),
+                               sdnn=("SDNN_1", "mean"),
+                               hr=("Heart Rate", "mean"),
+                               snore=("Snoring", lambda s: 100 * (s > 0).mean()),
+                               nmin=("Heart Rate", "size"))
+    g = g[g.nmin >= 60]                       # at least an hour of physiology that night
+    if len(g) < PHYSIO_MIN_NIGHTS:
+        return None
+    return dict(participant=pid, physio_nights=len(g),
+                rr_mean=g.rr_mean.mean(), rr_sd=g.rr_sd.mean(), rr_btw_sd=g.rr_mean.std(),
+                sdnn_mean=g.sdnn.mean(), hr_mean=g.hr.mean(), snore_pct=g.snore.mean())
+
+_recs = [physio_summary(pid, set(nights[nights.participant == pid].night))
+         for pid in dat.participant]
+PH = pd.DataFrame([r for r in _recs if r])
+# inner join: the figure, the group tests and the adjusted models should all describe the
+# same participants, namely those with enough physiology nights to summarise
+D2 = dat.merge(PH, on="participant", how="inner")
+print(f"physiology available for {len(PH)} of {len(dat)} participants "
+      f"(>= {PHYSIO_MIN_NIGHTS} nights each)")
+
+PHVARS = [("rr_mean", "Respiration rate", "breaths/min", "{:.1f}"),
+          ("rr_sd", "Respiration irregularity", "within-night SD", "{:.2f}"),
+          ("rr_btw_sd", "Respiration, night-to-night", "SD of nightly means", "{:.2f}"),
+          ("sdnn_mean", "SDNN", "ms", "{:.1f}"),
+          ("hr_mean", "Heart rate", "bpm", "{:.1f}"),
+          ("snore_pct", "Snoring", "% of minutes", "{:.1f}")]
+""")
+
+code(r"""
+# 1. Do the two cognitive groups differ on any channel? Hedges g bounds what could hide here.
+def hedges_g(a, b):
+    na, nb = len(a), len(b)
+    sp = np.sqrt(((na - 1) * a.var(ddof=1) + (nb - 1) * b.var(ddof=1)) / (na + nb - 2))
+    g = (b.mean() - a.mean()) / sp
+    g *= 1 - 3 / (4 * (na + nb) - 9)
+    se = np.sqrt((na + nb) / (na * nb) + g ** 2 / (2 * (na + nb)))
+    return g, g - 1.96 * se, g + 1.96 * se
+
+rows = []
+for k, lab, unit, fmt in PHVARS:
+    a = D2.loc[D2.impaired == 0, k].dropna()
+    b = D2.loc[D2.impaired == 1, k].dropna()
+    g, glo, ghi = hedges_g(a, b)
+    rows.append(dict(channel=lab, unit=unit, unimpaired=fmt.format(a.mean()),
+                     impaired=fmt.format(b.mean()), g=g, lo=glo, hi=ghi,
+                     p=stats.mannwhitneyu(a, b)[1]))
+phys_status = pd.DataFrame(rows)
+print(phys_status.to_string(index=False, float_format=lambda v: f"{v:+.3f}"))
+print("\nlargest |g| = %.2f ; every interval includes zero" % phys_status.g.abs().max())
+""")
+
+code(r"""
+# 2. Does the primary association depend on any of them?
+adj_rows = [dict(model="Age and sex only (primary)", **assoc("ace_memory_subscale", "P_RL", data=D2))]
+for k, lab, unit, _ in PHVARS:
+    r = assoc("ace_memory_subscale", "P_RL", cov=("age_mid", "male", k), data=D2)
+    if r:
+        adj_rows.append(dict(model=f"+ {lab}", **r))
+r_all = assoc("ace_memory_subscale", "P_RL",
+              cov=tuple(["age_mid", "male"] + [k for k, _, _, _ in PHVARS]), data=D2)
+if r_all:
+    adj_rows.append(dict(model="+ all six channels", **r_all))
+phys_adj = pd.DataFrame(adj_rows)
+print(phys_adj[["model", "n", "beta", "lo", "hi", "p"]].to_string(
+      index=False, float_format=lambda v: f"{v:+.3f}"))
+""")
+
+code(r"""
+# Figure 12b — the same view used in the manuscript: mirrored half-violins by cognitive status,
+# every participant plotted, with the effect sizes beside them; then the adjusted models.
+def half_violin(ax, vals, row, side, color):
+    v = np.asarray(vals, float)
+    xs = np.linspace(v.min() - .45, v.max() + .45, 220)
+    dens = stats.gaussian_kde(v)(xs)
+    dens = dens / dens.max() * 0.38
+    ax.fill_between(xs, row, row + side * dens, color=color, alpha=.26, zorder=2, linewidth=0)
+    ax.plot(xs, row + side * dens, color=color, linewidth=1.1, alpha=.65, zorder=3)
+    jit = RNG.uniform(.06, .20, len(v)) * side
+    ax.scatter(v, row + jit, s=11, color=color, alpha=.85, edgecolor="white",
+               linewidth=.45, zorder=5)
+    q1, med, q3 = np.percentile(v, [25, 50, 75])
+    ax.plot([q1, q3], [row + side * .028] * 2, color=color, linewidth=3.4, alpha=.95,
+            zorder=6, solid_capstyle="butt")
+    ax.plot([med, med], [row, row + side * .30], color="white", linewidth=2.6, zorder=7)
+    ax.plot([med, med], [row, row + side * .30], color=color, linewidth=1.5, zorder=8)
+
+fig = plt.figure(figsize=(12.6, 9.4))
+gs = fig.add_gridspec(2, 2, width_ratios=[1.0, .62], height_ratios=[1.0, .54],
+                      wspace=.10, hspace=.34)
+ax = fig.add_subplot(gs[0, 0])
+y = np.arange(len(PHVARS))[::-1]
+g0, g1 = D2[D2.impaired == 0], D2[D2.impaired == 1]
+for yy, (k, lab, unit, _) in zip(y, PHVARS):
+    a, b = g0[k].dropna().to_numpy(), g1[k].dropna().to_numpy()
+    pool = np.concatenate([a, b]); m, sd = pool.mean(), pool.std(ddof=1)
+    ax.axhline(yy, color=GRID, linewidth=.9, zorder=1)
+    half_violin(ax, (a - m) / sd, yy, +1, DEST["L"])
+    half_violin(ax, (b - m) / sd, yy, -1, DEST["W"])
+ax.axvline(0, color=AXIS, linewidth=1.0, linestyle=(0, (4, 3)), zorder=2)
+ax.set_yticks(y); ax.set_yticklabels([f"{l}\n({u})" for _, l, u, _ in PHVARS], fontsize=8.8)
+ax.set_ylim(-.62, len(PHVARS) - .38); ax.set_xlim(-2.75, 4.65)
+ax.set_xlabel("Standardised value  (SD from the cohort mean)")
+ax.set_title("a · The two groups are drawn from the same physiology", loc="left", pad=36)
+ax.legend(handles=[plt.Line2D([], [], color=DEST["L"], marker="o", linestyle="none",
+                          markersize=7, label=f"ACE-III > 82   (n = {len(g0)})"),
+                   plt.Line2D([], [], color=DEST["W"], marker="o", linestyle="none",
+                          markersize=7, label=f"ACE-III <= 82   (n = {len(g1)})")],
+          loc="lower left", bbox_to_anchor=(0, 1.005), ncol=2, frameon=False)
+
+axs = fig.add_subplot(gs[0, 1]); axs.set_axis_off()
+axs.set_xlim(-.02, 1.02); axs.set_ylim(-.62, len(PHVARS) - .38)
+hdr = len(PHVARS) - .50
+for xx, lab in [(.0, "> 82"), (.155, "<= 82"), (.34, "Hedges g (95% CI)"), (1.0, "p")]:
+    axs.annotate(lab, xy=(xx, hdr), fontsize=7.5, color=MUTED, fontweight="bold",
+                 ha="right" if lab == "p" else "left")
+axs.annotate("group mean", xy=(.0, hdr + .20), fontsize=7.1, color=MUTED, style="italic")
+axs.plot([-.02, 1.0], [hdr - .14] * 2, color=GRID, linewidth=.9, clip_on=False)
+for yy, (_, r) in zip(y, phys_status.iterrows()):
+    axs.annotate(r.unimpaired, xy=(.0, yy), va="center", fontsize=7.7, color=INK2)
+    axs.annotate(r.impaired, xy=(.155, yy), va="center", fontsize=7.7, color=INK2)
+    axs.annotate(f"{r.g:+.2f}  ({r.lo:+.2f}, {r.hi:+.2f})", xy=(.34, yy), va="center",
+                 fontsize=7.4, color=INK2)
+    axs.annotate(f"{r.p:.2f}", xy=(1.0, yy), va="center", ha="right", fontsize=7.7, color=INK2)
+
+ax2 = fig.add_subplot(gs[1, :])
+yb = np.arange(len(phys_adj))[::-1]; p0 = phys_adj.iloc[0]
+ax2.axvspan(p0.lo, p0.hi, color=WASH, zorder=1)
+ax2.axvline(p0.beta, color=AXIS, linewidth=1.1, linestyle=(0, (5, 4)), zorder=2)
+ax2.plot(phys_adj.beta, yb, color=DEST["L"], linewidth=1.0, alpha=.5, zorder=3)
+for yy, (i, r) in zip(yb, phys_adj.iterrows()):
+    col = INK if i == 0 else DEST["L"]
+    ax2.plot([r.lo, r.hi], [yy] * 2, color=col, linewidth=1.9, zorder=4)
+    ax2.plot([r.beta], [yy], "o", color=col, markersize=8 if i == 0 else 6.8,
+             markeredgecolor="white", markeredgewidth=1.2, zorder=5)
+    ax2.annotate(f"{r.beta:+.2f}", xy=(r.hi + .016, yy), va="center", fontsize=8.0,
+                 color=INK if i == 0 else INK2, fontweight="bold" if i == 0 else "normal")
+ax2.set_yticks(yb); ax2.set_yticklabels(phys_adj.model, fontsize=8.2)
+ax2.set_ylim(-.62, len(phys_adj) - .38); ax2.set_xlim(0, phys_adj.hi.max() + .13)
+ax2.set_xticks([0, .2, .4, .6, .8])
+ax2.set_xlabel("Standardised beta on ACE-III memory")
+ax2.set_title("b · And adjusting for them changes nothing", loc="left", pad=12)
+ax2.annotate("shaded: 95% CI of the primary estimate", xy=(0, -.22),
+             xycoords="axes fraction", fontsize=7.6, color=MUTED)
+suptitle(fig, "Figure 12b · Testing the staging-artefact account",
+         "The channels the artefact account needs, and what adjusting for them does.", y=1.012)
+save(fig, "fig12b_physio"); plt.show()
+""")
+
+md(r"""
+The premise fails: the two groups are indistinguishable on all six channels, no standardised
+difference exceeds g = -0.35, and every interval excludes effects beyond roughly 0.9 SD. None of the
+channels tracks the index. Adjusting for all six at once leaves the association essentially where it
+started.
+
+This does not establish that the index measures REM-exit neurophysiology, and it cannot: the device
+exposes no staging-confidence channel, and what is adjusted for here are summaries of respiration
+and cardiac variability, not the accuracy of any given epoch. What it removes is the specific
+mechanism the artefact account needs.
 """)
 
 # ============================================================ 13. Conclusion

@@ -89,12 +89,14 @@ previous run.
 | `analysis/make_figures.sh` | Reruns the notebook's own code with the in-figure titles suppressed, then maps the notebook's figure names onto the manuscript's numbering |
 | `analysis/extra_analyses.py` | Selection bootstrap (Fig 11), specification curve over 320 paths (Fig 12), disjoint night halves, regression diagnostics (Fig 17) |
 | `analysis/followup_and_physio.py` | Six-month follow-up cognition (Fig 9); nocturnal physiology by cognitive status and the adjusted models |
-| `analysis/fig_physio_w3plus.py` | Figure 14, the staging-artefact test |
+| `analysis/fig_physio_w3plus.py` | Figure 14, the staging-artefact test. **This is the only producer of `fig14_physio`** — `followup_and_physio.py` used to draw a competing version under the same name, and whichever ran last won |
 | `analysis/make_tables.py` | LaTeX table fragments from the result CSVs |
 | `src/make_rem_notebook_v2.py` | Generator the notebook is built from — **edit this, not the `.ipynb`** |
 | `src/validate_palette.py` | Checks the palette against colour-vision-deficiency thresholds |
 
-A fully executed copy of the notebook is on Kaggle:
+The notebook covers the same ground as Sections 1-12 of the manuscript and adds Section 12b, the
+staging-artefact test, so Figure 14 can be reproduced inside the notebook as well as from
+`analysis/fig_physio_w3plus.py`. A fully executed copy is on Kaggle:
 https://www.kaggle.com/code/alisaremi/rem-exit-continuity-visual-edition
 
 Running the generator with `--script` emits a flat `_validate.py` of all code cells, which is how

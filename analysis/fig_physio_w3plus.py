@@ -133,8 +133,9 @@ def build():
     ax.set_ylim(-.62, len(CH) - .38)
     ax.set_xlim(-2.75, 4.65)
     ax.set_xlabel("Standardised value  (SD from the cohort mean)")
+    # the legend sits just above the axes, so the title needs room to clear it
     ax.set_title("a   The two groups are drawn from the same physiology",
-                 loc="left", pad=20)
+                 loc="left", pad=36)
     ax.legend(handles=[Line2D([], [], color=SLATE, marker="o", linestyle="none",
                               markersize=7, label=f"ACE-III > 82   ($n$ = {len(g0)})"),
                        Line2D([], [], color=AMBER, marker="o", linestyle="none",
